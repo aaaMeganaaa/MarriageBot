@@ -9,9 +9,12 @@ from cogs import utils as localutils
 
 class FamilyCommands(utils.Cog):
 
-    MAXIMUM_MARRIAGE_COUNT = 2
-
     async def cache_setup(self, db):
+        """
+        Set up the cache stuff needed for this cog
+        """
+
+        # We need to run this or gds complains that none of the paths exist
         await self.bot.neo4j.cypher(
             r"""MERGE (u:FamilyTreeMember {user_id: -1, guild_id: -1})
             MERGE (u)-[:MARRIED_TO]->(u)-[:PARENT_OF]->(u)-[:CHILD_OF]->(u)"""
@@ -26,14 +29,17 @@ class FamilyCommands(utils.Cog):
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
 
+        # Get their permissions
+        permissions = await localutils.get_perks_for_user(self.bot, user)
+
         # See if they're already married
         data = await self.bot.neo4j.cypher(
             r"MATCH (n:FamilyTreeMember {guild_id: 0})-[:MARRIED_TO]->(:FamilyTreeMember) WHERE n.user_id in [$author_id, $user_id] RETURN n",
             author_id=ctx.author.id, user_id=user.id
         )
         matches = data['results'][0]['data']
-        if len(matches) >= self.MAXIMUM_MARRIAGE_COUNT:
-            return await ctx.send(f"You can only marry {self.MAXIMUM_MARRIAGE_COUNT} people error")
+        if len(matches) >= permissions.max_partners:
+            return await ctx.send(f"You can only marry {permissions.max_partners} people error")
 
         # See if they're already related
         if await localutils.family.utils.is_related(self.bot, ctx.author, user):

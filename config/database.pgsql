@@ -25,3 +25,10 @@ CREATE TABLE IF NOT EXISTS channel_list(
     value VARCHAR(50),
     PRIMARY KEY (guild_id, channel_id, key)
 );
+
+
+CREATE TABLE IF NOT EXISTS role_perks(
+    role_id BIGINT PRIMARY KEY,
+    value INTEGER
+);
+INSERT INTO role_perks (role_id, value) VALUES (0, 491589) ON CONFLICT DO NOTHING;

@@ -17,6 +17,17 @@ def human_join(args):
 
 class Information(utils.Cog):
 
+    async def cache_setup(self, db):
+        """
+        Set up the cache stuff needed for this cog
+        """
+
+        # We need to run this or gds complains that none of the paths exist
+        await self.bot.neo4j.cypher(
+            r"""MERGE (u:FamilyTreeMember {user_id: -1, guild_id: -1})
+            MERGE (u)-[:MARRIED_TO]->(u)-[:PARENT_OF]->(u)-[:CHILD_OF]->(u)"""
+        )
+
     @utils.command(aliases=['partners', 'wife', 'wives', 'husband', 'husbands', 'spouse', 'spouses'])
     @utils.checks.bot_is_ready()
     async def partner(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
