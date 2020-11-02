@@ -30,7 +30,7 @@ class FamilyCommands(utils.Cog):
             return await ctx.send("Invalid user error.")
 
         # Get their permissions
-        permissions = await localutils.get_perks_for_user(self.bot, user)
+        permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
 
         # See if they're already married
         data = await self.bot.neo4j.cypher(

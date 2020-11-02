@@ -31,7 +31,7 @@ class ParentCommands(utils.Cog):
             return await ctx.send("You're already related error.")
 
         # Get their permissions
-        permissions = await localutils.get_perks_for_user(self.bot, user)
+        permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
 
         # See how many children they're allowed to have
         data = await self.bot.neo4j.cypher(
@@ -73,7 +73,7 @@ class ParentCommands(utils.Cog):
             return await ctx.send("You're already related error.")
 
         # Get their permissions
-        permissions = await localutils.get_perks_for_user(self.bot, user)
+        permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
 
         # See how many children they're allowed to have
         data = await self.bot.neo4j.cypher(
