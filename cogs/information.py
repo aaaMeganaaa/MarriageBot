@@ -69,6 +69,21 @@ class Information(utils.Cog):
         full_size = await localutils.family.utils.get_family_size(self.bot, discord.Object(user_id))
         return await ctx.send(f"<@{user_id}>'s family size is {blood_size} blood relatives and {full_size} general relatives.", allowed_mentions=discord.AllowedMentions.none())
 
+    @utils.command(aliases=['mother', 'father', 'mom', 'dad', 'mum'])
+    @utils.checks.bot_is_ready()
+    async def parent(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
+        """Tells you who a given user's parent is"""
+
+        user_id = user_id or ctx.author.id
+        data = await self.bot.neo4j.cypher(
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=user_id
+        )
+        matches = data['results'][0]['data']
+        if not matches:
+            return await ctx.send(f"<@{user_id}> has no parent error.", allowed_mentions=discord.AllowedMentions(users=False))
+        return await ctx.send(f"<@{user_id}> is the child of to <@{matches[0]['row'][0]['user_id']}>.", allowed_mentions=discord.AllowedMentions(users=False))
+
     @utils.command(aliases=['t', 'familytree'])
     @utils.checks.bot_is_ready()
     async def tree(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
