@@ -25,19 +25,3 @@ CREATE TABLE IF NOT EXISTS channel_list(
     value VARCHAR(50),
     PRIMARY KEY (guild_id, channel_id, key)
 );
-
-
-CREATE TABLE IF NOT EXISTS marriages(
-    user_id BIGINT,
-    partner_id BIGINT,
-    timestamp TIMESTAMP,
-    PRIMARY KEY (user_id, partner_id)
-);
-
-
-CREATE TABLE IF NOT EXISTS parents(
-    parent_id BIGINT,
-    child_id BIGINT,
-    timestamp TIMESTAMP,
-    PRIMARY KEY (user_id, partner_id)
-);
