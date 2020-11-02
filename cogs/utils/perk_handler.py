@@ -122,6 +122,13 @@ async def get_perks_for_user(bot:utils.Bot, user) -> MarriageBotPerkHandler:
     Get the perks object for a given user.
     """
 
+    # Owners can override everything, why not
+    if user.id in bot.owner_ids:
+        user_perms = MarriageBotPerkHandler()
+        user_perms.value = user_perms.all_permissions
+        user_perms.tree_command_cooldown = 0
+        return user_perms
+
     # Get the member
     guild = await bot.fetch_support_guild()
     try:
