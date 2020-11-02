@@ -17,7 +17,7 @@ class ParentCommands(utils.Cog):
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
 
-        # See if they're already married
+        # See if they already have a parent
         data = await self.bot.neo4j.cypher(
             r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
             user_id=user.id
@@ -29,6 +29,18 @@ class ParentCommands(utils.Cog):
         # See if they're already related
         if await localutils.family.utils.is_related(self.bot, ctx.author, user):
             return await ctx.send("You're already related error.")
+
+        # Get their permissions
+        permissions = await localutils.get_perks_for_user(self.bot, user)
+
+        # See how many children they're allowed to have
+        data = await self.bot.neo4j.cypher(
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=ctx.author.id
+        )
+        matches = data['results'][0]['data']
+        if len(matches) > permissions.max_children:
+            return await ctx.send(f"You can only have {permissions.max_children} error.")
 
         # Add them to the db
         data = await self.bot.neo4j.cypher(
@@ -47,10 +59,10 @@ class ParentCommands(utils.Cog):
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
 
-        # See if they're already married
+        # See they already have a parent
         data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
-            user_id=user.id
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=ctx.author.id
         )
         matches = data['results'][0]['data']
         if matches:
@@ -59,6 +71,18 @@ class ParentCommands(utils.Cog):
         # See if they're already related
         if await localutils.family.utils.is_related(self.bot, ctx.author, user):
             return await ctx.send("You're already related error.")
+
+        # Get their permissions
+        permissions = await localutils.get_perks_for_user(self.bot, user)
+
+        # See how many children they're allowed to have
+        data = await self.bot.neo4j.cypher(
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=user.id
+        )
+        matches = data['results'][0]['data']
+        if len(matches) > permissions.max_children:
+            return await ctx.send(f"They can only have {permissions.max_children} error.")
 
         # Add them to the db
         await self.bot.neo4j.cypher(
