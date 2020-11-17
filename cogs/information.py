@@ -9,12 +9,6 @@ import voxelbotutils as utils
 from cogs import utils as localutils
 
 
-def human_join(args):
-    if len(args) == 1:
-        return args[0]
-    return ', '.join(args[:-1]) + f' and {args[-1]}'
-
-
 class Information(utils.Cog):
 
     async def cache_setup(self, db):
@@ -43,7 +37,7 @@ class Information(utils.Cog):
             return await ctx.send(f"<@{user_id}> isn't married error.", allowed_mentions=discord.AllowedMentions.none())
         partner_ids = sorted([i['row'][0]['user_id'] for i in matches])
         partner_mentions = [f"<@{i}>" for i in partner_ids]
-        return await ctx.send(f"<@{user_id}> is married to {human_join(partner_mentions)}.", allowed_mentions=discord.AllowedMentions.none())
+        return await ctx.send(f"<@{user_id}> is married to {localutils.human_join(partner_mentions)}.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['kids', 'child'])
     @utils.checks.bot_is_ready()
@@ -61,7 +55,7 @@ class Information(utils.Cog):
         uids = []
         for row in matches:
             uids.append(f"<@{row['row'][0]['user_id']}>")
-        return await ctx.send(f"{user.mention} is parent of {', '.join(uids)}.", allowed_mentions=discord.AllowedMentions.none())
+        return await ctx.send(f"{user.mention} is parent of {localutils.human_join(uids)}.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['relation'])
     @utils.checks.bot_is_ready()
