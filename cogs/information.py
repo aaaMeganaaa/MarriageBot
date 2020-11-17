@@ -1,5 +1,6 @@
 import asyncio
 import io
+import typing
 
 import aioneo4j
 import discord
@@ -91,8 +92,12 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['t', 'familytree'])
     @utils.checks.bot_is_ready()
-    async def tree(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
+    async def tree(self, ctx:utils.Context, user_id:typing.Optional[utils.converters.UserID]):
         """Tells you if you're related to a user"""
+
+        engine = 'dot'  # engine.lower()
+        if engine not in ['dot', 'neato', 'fdp', 'sfdp', 'twopi', 'circo', 'patchwork', 'osage']:
+            return await ctx.send("The Graphviz engine you provided isn't valid.")
 
         # Write to file
         v = await self.get_tree_dot(ctx, user_id)
@@ -104,12 +109,12 @@ class Information(utils.Cog):
             with open(f'{ctx.author.id}.gz', 'w', encoding='utf-8') as a:
                 a.write(dot)
         except Exception as e:
-            self.logger.error(f"Could not write to {self.bot.config['tree_file_location']}/{ctx.author.id}.gz")
+            self.logger.error(f"Could not write to {ctx.author.id}.gz")
             raise e
 
         # Convert to an image
         dot_process = await asyncio.create_subprocess_exec(*[
-            'dot', '-Tpng', f'{ctx.author.id}.gz', '-o', f'{ctx.author.id}.png', '-Gcharset=UTF-8',
+            engine, '-Tpng', f'{ctx.author.id}.gz', '-o', f'{ctx.author.id}.png', '-Gcharset=UTF-8',
         ])
         try:
             await asyncio.wait_for(dot_process.wait(), 15)
@@ -131,7 +136,11 @@ class Information(utils.Cog):
 
         # Output file
         file = discord.File(f"{ctx.author.id}.png", filename="tree.png")
-        return await ctx.send(flavour_text, file=file)
+        await ctx.send(flavour_text, file=file)
+
+        # Delete what we worked with
+        await asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.png'])
+        await asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.gz'])
 
     @utils.command(hidden=True)
     @commands.bot_has_permissions(attach_files=True)
