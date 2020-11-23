@@ -1,6 +1,7 @@
 import asyncio
 import io
 import typing
+import json
 
 import aioneo4j
 import discord
@@ -185,7 +186,8 @@ class Information(utils.Cog):
             data = await self.bot.neo4j.cypher(cypher)
         except aioneo4j.errors.ClientError as e:
             return await ctx.send(str(e))
-        return await ctx.send(data['results'][0]['data'])
+        await ctx.send(f"`data['results'][0]['data']` == ```json\n{json.dumps(data['results'][0]['data'], indent=4)}```")
+        await ctx.send(f"`data` == ```json\n{json.dumps(data, indent=4)}```")
 
     @utils.Cog.listener()
     @utils.checks.bot_is_ready()
