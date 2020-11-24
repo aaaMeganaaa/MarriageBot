@@ -114,7 +114,7 @@ async def is_family_pending_proposal(bot, user, guild_id:int=0) -> typing.List[d
 
     all_family_nodes = await get_all_family_member_nodes(bot, user, guild_id)
     for row in all_family_nodes:
-        if row["row"].get("pending_proposal"):
+        if row["row"][0].get("pending_proposal"):
             return True
     return False
 
