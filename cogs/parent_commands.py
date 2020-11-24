@@ -48,7 +48,7 @@ class ParentCommands(utils.Cog):
             matches = data['results'][0]['data']
             if matches:
                 return await ctx.send(
-                    f"Sorry, {ctx.author}, it looks like {user.mention} already has a parent :<",
+                    f"Sorry, {ctx.author.mention}, it looks like {user.mention} already has a parent :<",
                     allowed_mentions=localutils.utils.only_mention(ctx.author)
                 )
 
