@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime as dt
 
 import aioneo4j
@@ -59,6 +60,20 @@ class ParentCommands(utils.Cog):
             if len(matches) > permissions.max_children:
                 return await ctx.send(f"You can only have {permissions.max_children} error.")
 
+            # See if they want to adopt
+            message = await ctx.send(f"{user.mention} do you want to be the child of {ctx.author.mention} message")
+            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
+            try:
+                check = lambda p: p.user_id == user.id and p.message_id == message.id and localutils.utils.TickPayloadCheckResult.from_payload(p)
+                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
+
+            # Check what they said
+            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
+            if not result.is_tick:
+                return await ctx.send(f"{ctx.author.mention} they said no message")
+
             # Add them to the db
             data = await self.bot.neo4j.cypher(
                 r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
@@ -107,6 +122,20 @@ class ParentCommands(utils.Cog):
             matches = data['results'][0]['data']
             if len(matches) > permissions.max_children:
                 return await ctx.send(f"They can only have {permissions.max_children} error.")
+
+            # See if they want to adopt
+            message = await ctx.send(f"{user.mention} do you want to be the parent of {ctx.author.mention} message")
+            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
+            try:
+                check = lambda p: p.user_id == user.id and p.message_id == message.id and localutils.utils.TickPayloadCheckResult.from_payload(p)
+                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
+
+            # Check what they said
+            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
+            if not result.is_tick:
+                return await ctx.send(f"{ctx.author.mention} they said no message")
 
             # Add them to the db
             await self.bot.neo4j.cypher(

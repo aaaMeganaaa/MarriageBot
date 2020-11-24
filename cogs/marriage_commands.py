@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime as dt
 
 import aioneo4j
@@ -49,6 +50,20 @@ class FamilyCommands(utils.Cog):
             # See if they're already related
             if await localutils.family.utils.is_related(self.bot, ctx.author, user):
                 return await ctx.send("You're already related error.")
+
+            # See if they want to marry
+            message = await ctx.send(f"{user.mention} do you want to marry {ctx.author.mention} message")
+            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
+            try:
+                check = lambda p: p.user_id == user.id and p.message_id == message.id and localutils.utils.TickPayloadCheckResult.from_payload(p)
+                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
+
+            # Check what they said
+            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
+            if not result.is_tick:
+                return await ctx.send(f"{ctx.author.mention} they said no message")
 
             # Add them to the db
             await self.bot.neo4j.cypher(
