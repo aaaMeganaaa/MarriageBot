@@ -73,7 +73,7 @@ class FamilyCommands(utils.Cog):
             # Check what they said
             result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
             if not result.is_tick:
-                if payload.user_id == ctx.author:
+                if payload.user_id == ctx.author.id:
                     return await ctx.send("Successfully cancelled proposal message")
                 return await ctx.send(f"{ctx.author.mention} they said no message")
 
