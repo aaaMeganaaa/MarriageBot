@@ -29,7 +29,7 @@ class ParentCommands(utils.Cog):
         """Adopt a user"""
 
         # Check exemptions
-        if user.author.id == ctx.guild.me.id:
+        if user.id == ctx.guild.me.id:
             return await ctx.send("Ha. No. I can do better than you, I feel. Thanks.")
         elif user.bot:
             return await ctx.send("You can't adopt bots, I'm afraid :<")
@@ -95,7 +95,7 @@ class ParentCommands(utils.Cog):
         """Make a user your parent"""
 
         # Check exemptions
-        if user.author.id == ctx.guild.me.id:
+        if user.id == ctx.guild.me.id:
             return await ctx.send("Hmmmmmm I'm flattered, but no. I'm okay. Thank you.")
         elif user == ctx.author:
             return await ctx.send("Unlikely.")

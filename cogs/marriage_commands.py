@@ -29,7 +29,7 @@ class FamilyCommands(utils.Cog):
         """Marries to you another user"""
 
         # Check exemptions
-        if user.author.id == ctx.guild.me.id:
+        if user.id == ctx.guild.me.id:
             return await ctx.send("Oh wow. Um. No. No thank you. I'm not interested.")
         elif user.bot:
             return await ctx.send("Bots don't really have a concept of marriage, unfortunately.")
