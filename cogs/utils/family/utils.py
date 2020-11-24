@@ -169,7 +169,7 @@ async def get_relationship(bot, user, user2, guild_id:int=0) -> typing.Optional[
     formatable_string = "(:FamilyTreeMember {{user_id: {0}, guild_id: {1}}})"
     tree_member_nodes = []
     uids = []
-    data = await is_related(user, user2, guild_id)
+    data = await is_related(bot, user, user2, guild_id)
     if not data:
         return None
 
