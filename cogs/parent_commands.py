@@ -1,13 +1,24 @@
 from datetime import datetime as dt
 
+import aioneo4j
 import discord
-from discord.ext import commands
 import voxelbotutils as utils
 
 from cogs import utils as localutils
 
 
 class ParentCommands(utils.Cog):
+
+    async def cache_setup(self, db):
+        """
+        Set up the cache stuff needed for this cog
+        """
+
+        # We need to run this or gds complains that none of the paths exist
+        await self.bot.neo4j.cypher(
+            r"""MERGE (u:FamilyTreeMember {user_id: -1, guild_id: -1})
+            MERGE (u)-[:MARRIED_TO]->(u)-[:PARENT_OF]->(u)-[:CHILD_OF]->(u)"""
+        )
 
     @utils.command()
     @utils.checks.bot_is_ready()
@@ -45,7 +56,8 @@ class ParentCommands(utils.Cog):
 
         # Add them to the db
         data = await self.bot.neo4j.cypher(
-            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0}) MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
+            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
+            MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
             MERGE (n)-[:PARENT_OF {timestamp: $timestamp}]->(m)-[:CHILD_OF {timestamp: $timestamp}]->(n)""",
             author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
         )
@@ -87,7 +99,8 @@ class ParentCommands(utils.Cog):
 
         # Add them to the db
         await self.bot.neo4j.cypher(
-            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0}) MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
+            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
+            MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
             MERGE (n)-[:CHILD_OF {timestamp: $timestamp}]->(m)-[:PARENT_OF {timestamp: $timestamp}]->(n)""",
             author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
         )
@@ -110,14 +123,15 @@ class ParentCommands(utils.Cog):
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
-            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:CHILD_OF]->(:FamilyTreeMember)-[t:PARENT_OF]->(n) DELETE r, t""",
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:CHILD_OF]->
+            (:FamilyTreeMember)-[t:PARENT_OF]->(n) DELETE r, t""",
             author_id=ctx.author.id, parent_id=parent_id
         )
         return await ctx.send("Deleted from database.")
 
     @utils.command()
     @utils.checks.bot_is_ready()
-    async def disown(self, ctx:utils.Context, user_id:commands.Greedy[utils.converters.UserID]):
+    async def disown(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
         """Leave your parent"""
 
         # Make sure they said someone
@@ -125,27 +139,27 @@ class ParentCommands(utils.Cog):
             raise utils.errors.MissingRequiredArgumentString("user_id")
 
         # Check they're actually a parent
-        for single_user_id in user_id:
-            data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember {user_id: $user_id, guild_id: 0}) RETURN m",
-                author_id=ctx.author.id, user_id=single_user_id
-            )
-            matches = data['results'][0]['data']
-            if not matches:
-                return await ctx.send(f"You're not the parent of {single_user_id} error.")
+        data = await self.bot.neo4j.cypher(
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:PARENT_OF]->
+            (m:FamilyTreeMember {user_id: $user_id, guild_id: 0}) RETURN m""",
+            author_id=ctx.author.id, user_id=user_id
+        )
+        matches = data['results'][0]['data']
+        if not matches:
+            return await ctx.send(f"You're not the parent of {user_id} error.")
 
         # Remove them from the db
-        for single_user_id in user_id:
-            await self.bot.neo4j.cypher(
-                r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:PARENT_OF]->(:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[t:CHILD_OF]->(n)
-                DELETE r, t""",
-                author_id=ctx.author.id, user_id=single_user_id
-            )
+        await self.bot.neo4j.cypher(
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:PARENT_OF]->
+            (:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[t:CHILD_OF]->(n) DELETE r, t""",
+            author_id=ctx.author.id, user_id=user_id
+        )
 
         # And done
-        return await ctx.send(f"Deleted {len(user_id)} fields from database.")
+        return await ctx.send("Deleted field from database.")
 
 
 def setup(bot:utils.Bot):
     x = ParentCommands(bot)
+    bot.neo4j = aioneo4j.Neo4j(**bot.config['neo4j'])
     bot.add_cog(x)

@@ -2,7 +2,6 @@ from datetime import datetime as dt
 
 import aioneo4j
 import discord
-from discord.ext import commands
 import voxelbotutils as utils
 
 from cogs import utils as localutils
@@ -48,7 +47,8 @@ class FamilyCommands(utils.Cog):
 
         # Add them to the db
         await self.bot.neo4j.cypher(
-            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0}) MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
+            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
+            MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
             MERGE (n)-[:MARRIED_TO {timestamp: $timestamp}]->(m)-[:MARRIED_TO {timestamp: $timestamp}]->(n)""",
             author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
         )
@@ -56,33 +56,28 @@ class FamilyCommands(utils.Cog):
 
     @utils.command()
     @utils.checks.bot_is_ready()
-    async def divorce(self, ctx:utils.Context, user_id:commands.Greedy[utils.converters.UserID]):
+    async def divorce(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
         """Divorces you form your partner"""
 
-        # Make sure they said someone
-        if not user_id:
-            raise utils.errors.MissingRequiredArgumentString("user_id")
-
         # See if they're already married
-        for single_user_id in user_id:
-            data = await self.bot.neo4j.cypher(
-                r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:MARRIED_TO]->(m:FamilyTreeMember {user_id: $partner_id, guild_id: 0})
-                RETURN m""",
-                author_id=ctx.author.id, partner_id=single_user_id
-            )
-            matches = data['results'][0]['data']
-            if not matches:
-                return await ctx.send(f"You're not married to {single_user_id} error.")
+        data = await self.bot.neo4j.cypher(
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:MARRIED_TO]->
+            (m:FamilyTreeMember {user_id: $partner_id, guild_id: 0}) RETURN m""",
+            author_id=ctx.author.id, partner_id=user_id
+        )
+        matches = data['results'][0]['data']
+        if not matches:
+            return await ctx.send(f"You're not married to {user_id} error.")
 
         # Remove them from the db
-        for single_user_id in user_id:
-            await self.bot.neo4j.cypher(
-                r"""MATCH (:FamilyTreeMember {user_id: $author_id, guild_id: 0})<-[r:MARRIED_TO]->(:FamilyTreeMember {user_id: $partner_id, guild_id: 0}) DELETE r""",
-                author_id=ctx.author.id, partner_id=single_user_id
-            )
+        await self.bot.neo4j.cypher(
+            r"""MATCH (:FamilyTreeMember {user_id: $author_id, guild_id: 0})<-[r:MARRIED_TO]->
+            (:FamilyTreeMember {user_id: $partner_id, guild_id: 0}) DELETE r""",
+            author_id=ctx.author.id, partner_id=user_id
+        )
 
         # And done
-        return await ctx.send(f"Deleted {len(user_id)} field(s) from database.")
+        return await ctx.send("Deleted field from database.")
 
 
 def setup(bot:utils.Bot):
