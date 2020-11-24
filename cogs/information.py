@@ -26,6 +26,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['partners', 'wife', 'wives', 'husband', 'husbands', 'spouse', 'spouses'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def partner(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you who a given user's partner is"""
 
@@ -43,6 +44,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['kids', 'child'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def children(self, ctx:utils.Context, user:discord.Member=None):
         """Gives you a list of someone's children"""
 
@@ -61,6 +63,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['relation'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def relationship(self, ctx:utils.Context, user:discord.Member):
         """Tells you if you're related to a user"""
 
@@ -68,6 +71,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['fs', 'treesize', 'ts'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def familysize(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
@@ -78,6 +82,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['mother', 'father', 'mom', 'dad', 'mum'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def parent(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you who a given user's parent is"""
 
@@ -93,6 +98,7 @@ class Information(utils.Cog):
 
     @utils.command(aliases=['t', 'familytree'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def tree(self, ctx:utils.Context, user_id:typing.Optional[utils.converters.UserID]):
         """Tells you if you're related to a user"""
 
@@ -147,6 +153,7 @@ class Information(utils.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.is_owner()
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True)
     async def rawtree(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
@@ -177,6 +184,7 @@ class Information(utils.Cog):
     @utils.command()
     @utils.checks.bot_is_ready()
     @commands.is_owner()
+    @commands.bot_has_permissions(send_messages=True)
     async def cypher(self, ctx:utils.Context, *, cypher:str):
         """Leave your parent"""
 
@@ -190,7 +198,6 @@ class Information(utils.Cog):
         await ctx.send(f"`data` == ```json\n{json.dumps(data, indent=4)}```")
 
     @utils.Cog.listener()
-    @utils.checks.bot_is_ready()
     async def on_message(self, message):
         """Store usernames in their family tree nodes"""
 

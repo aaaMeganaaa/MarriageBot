@@ -2,6 +2,7 @@ from datetime import datetime as dt
 
 import aioneo4j
 import discord
+from discord.ext import commands
 import voxelbotutils as utils
 
 from cogs import utils as localutils
@@ -22,6 +23,7 @@ class FamilyCommands(utils.Cog):
 
     @utils.command(aliases=['propose'])
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def marry(self, ctx:utils.Context, user:discord.Member):
         """Marries to you another user"""
 
@@ -61,6 +63,7 @@ class FamilyCommands(utils.Cog):
 
     @utils.command()
     @utils.checks.bot_is_ready()
+    @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def divorce(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
         """Divorces you form your partner"""
 
