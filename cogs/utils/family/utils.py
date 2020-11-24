@@ -214,8 +214,7 @@ class FamilyMemberLock(object):
                 raise commands.CommandError(f"The family of {user.mention} has a pending proposal already.")
         for user in self.family_members:
             await self.bot.neo4j.cypher(
-                r"""MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: 0})
-                MERGE (:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: true})""",
+                r"""MATCH (u:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id}) SET u.pending_proposal=true""",
                 user_id=user.id, guild_id=self.guild_id
             )
 
@@ -225,7 +224,6 @@ class FamilyMemberLock(object):
     async def unlock(self):
         for user in self.family_members:
             await self.bot.neo4j.cypher(
-                r"""MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: 0})
-                MERGE (n:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})""",
+                r"""MATCH (u:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id}) SET u.pending_proposal=false""",
                 user_id=user.id, guild_id=self.guild_id
             )
