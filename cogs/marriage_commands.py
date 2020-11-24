@@ -29,29 +29,34 @@ class FamilyCommands(utils.Cog):
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
 
-        # Get their permissions
-        permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
+        # Make sure they can't propose to other people
+        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=0):
 
-        # See if they're already married
-        data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {guild_id: 0})-[:MARRIED_TO]->(:FamilyTreeMember) WHERE n.user_id in [$author_id, $user_id] RETURN n",
-            author_id=ctx.author.id, user_id=user.id
-        )
-        matches = data['results'][0]['data']
-        if len(matches) >= permissions.max_partners:
-            return await ctx.send(f"You can only marry {permissions.max_partners} people error")
+            # Get their permissions
+            permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
 
-        # See if they're already related
-        if await localutils.family.utils.is_related(self.bot, ctx.author, user):
-            return await ctx.send("You're already related error.")
+            # See if they're already married
+            data = await self.bot.neo4j.cypher(
+                r"MATCH (n:FamilyTreeMember {guild_id: 0})-[:MARRIED_TO]->(:FamilyTreeMember) WHERE n.user_id in [$author_id, $user_id] RETURN n",
+                author_id=ctx.author.id, user_id=user.id
+            )
+            matches = data['results'][0]['data']
+            if len(matches) >= permissions.max_partners:
+                return await ctx.send(f"You can only marry {permissions.max_partners} people error")
 
-        # Add them to the db
-        await self.bot.neo4j.cypher(
-            r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
-            MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
-            MERGE (n)-[:MARRIED_TO {timestamp: $timestamp}]->(m)-[:MARRIED_TO {timestamp: $timestamp}]->(n)""",
-            author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
-        )
+            # See if they're already related
+            if await localutils.family.utils.is_related(self.bot, ctx.author, user):
+                return await ctx.send("You're already related error.")
+
+            # Add them to the db
+            await self.bot.neo4j.cypher(
+                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
+                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
+                MERGE (n)-[:MARRIED_TO {timestamp: $timestamp}]->(m)-[:MARRIED_TO {timestamp: $timestamp}]->(n)""",
+                author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
+            )
+
+        # And we done
         return await ctx.send("Added to database.")
 
     @utils.command()

@@ -2,6 +2,9 @@ import typing
 import string
 import random
 
+import discord
+from discord.ext import commands
+
 from .relationship_type import RelationshipType
 from .family_relationship import FamilyRelationship
 
@@ -190,3 +193,37 @@ async def get_relationship(bot, user, user2, guild_id:int=0) -> typing.Optional[
     # And this is the actual result
     matches = data['results'][0]['data'][0]['row']
     return matches
+
+
+class FamilyMemberLock(object):
+
+    def __init__(self, bot, *family_members, guild_id:int=None):
+        if guild_id is None:
+            raise TypeError("guild_id cannot be None")
+        self.bot = bot
+        self.family_members = family_members
+        self.guild_id = guild_id
+
+    async def __aenter__(self):
+        await self.lock()
+        return self
+
+    async def lock(self):
+        for user in self.family_members:
+            if await is_family_pending_proposal(self.bot, user, self.guild_id):
+                raise commands.CommandError(f"The family of {user.mention} has a pending proposal already.")
+        for user in self.family_members:
+            await self.bot.neo4j.cypher(
+                r"""MERGE (n:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: true})""",
+                user_id=user.id, guild_id=self.guild_id
+            )
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.unlock()
+
+    async def unlock(self):
+        for user in self.family_members:
+            await self.bot.neo4j.cypher(
+                r"""MERGE (n:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})""",
+                user_id=user.id, guild_id=self.guild_id
+            )
