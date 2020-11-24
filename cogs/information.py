@@ -27,7 +27,7 @@ class Information(utils.Cog):
     @utils.command(aliases=['partners', 'wife', 'wives', 'husband', 'husbands', 'spouse', 'spouses'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def partner(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
+    async def partner(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Tells you who a given user's partner is"""
 
         guild_id = localutils.utils.get_guild_id(ctx)
@@ -38,56 +38,70 @@ class Information(utils.Cog):
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send(f"<@{user_id}> isn't married error.", allowed_mentions=discord.AllowedMentions.none())
+            if user_id == ctx.author.id:
+                return await ctx.send("You aren't married to anyone :<")
+            return await ctx.send(f"<@{user_id}> isn't married to anyone :<", allowed_mentions=discord.AllowedMentions.none())
         partner_ids = sorted([i['row'][0]['user_id'] for i in matches])
         partner_mentions = [f"<@{i}>" for i in partner_ids]
+        if user_id == ctx.author.id:
+            return await ctx.send(f"You're married to {localutils.human_join(partner_mentions)}.", allowed_mentions=discord.AllowedMentions.none())
         return await ctx.send(f"<@{user_id}> is married to {localutils.human_join(partner_mentions)}.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['kids', 'child'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def children(self, ctx:utils.Context, user:discord.Member=None):
+    async def children(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Gives you a list of someone's children"""
 
         guild_id = localutils.utils.get_guild_id(ctx)
-        user = user or ctx.author
+        user_id = user_id or ctx.author.id
         data = await self.bot.neo4j.cypher(
             r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
-            user_id=user.id, guild_id=guild_id,
+            user_id=user_id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send(f"{user.mention} has no children error.", allowed_mentions=discord.AllowedMentions.none())
+            if user_id == ctx.author.id:
+                return await ctx.send("You don't have any children :<")
+            return await ctx.send(f"<@{user_id}> has no children :<", allowed_mentions=discord.AllowedMentions.none())
         uids = []
         for row in matches:
             uids.append(f"<@{row['row'][0]['user_id']}>")
-        return await ctx.send(f"{user.mention} is parent of {localutils.human_join(uids)}.", allowed_mentions=discord.AllowedMentions.none())
+        if user_id == ctx.author.id:
+            return await ctx.send(f"You're the parent of {localutils.human_join(uids)}.", allowed_mentions=discord.AllowedMentions.none())
+        return await ctx.send(f"<@{user_id}> is parent of {localutils.human_join(uids)}.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['relation'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def relationship(self, ctx:utils.Context, user:discord.Member):
+    async def relationship(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
         guild_id = localutils.utils.get_guild_id(ctx)
-        return await ctx.send(await localutils.family.utils.get_relationship(self.bot, ctx.author, user, guild_id=guild_id) or "You aren't related.")
+        text = await localutils.family.utils.get_relationship(self.bot, ctx.author, discord.Object(user_id), guild_id=guild_id)
+        return await ctx.send(text or "You aren't related.")
 
     @utils.command(aliases=['fs', 'treesize', 'ts'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def familysize(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
+    async def familysize(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
         guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
         blood_size = await localutils.family.utils.get_blood_family_size(self.bot, discord.Object(user_id), guild_id=guild_id)
         full_size = await localutils.family.utils.get_family_size(self.bot, discord.Object(user_id), guild_id=guild_id)
-        return await ctx.send(f"<@{user_id}>'s family size is {blood_size} blood relatives and {full_size} general relatives.", allowed_mentions=discord.AllowedMentions.none())
+        if user_id == ctx.author.id:
+            return await ctx.send(f"Your family size is **{blood_size} blood relatives** and **{full_size} general relatives**.")
+        return await ctx.send(
+            f"<@{user_id}>'s family size is **{blood_size} blood relatives** and **{full_size} general relatives**.",
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @utils.command(aliases=['mother', 'father', 'mom', 'dad', 'mum'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def parent(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
+    async def parent(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Tells you who a given user's parent is"""
 
         guild_id = localutils.utils.get_guild_id(ctx)
@@ -98,13 +112,17 @@ class Information(utils.Cog):
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send(f"<@{user_id}> has no parent error.", allowed_mentions=discord.AllowedMentions(users=False))
-        return await ctx.send(f"<@{user_id}> is the child of to <@{matches[0]['row'][0]['user_id']}>.", allowed_mentions=discord.AllowedMentions(users=False))
+            if user_id == ctx.author.id:
+                return await ctx.send("You don't have a parent :<")
+            return await ctx.send(f"<@{user_id}> has no parent :<", allowed_mentions=discord.AllowedMentions.none())
+        if user_id == ctx.author.id:
+            return await ctx.send(f"You're the child of <@{matches[0]['row'][0]['user_id']}>.", allowed_mentions=discord.AllowedMentions.none())
+        return await ctx.send(f"<@{user_id}> is the child of <@{matches[0]['row'][0]['user_id']}>.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['t', 'familytree'])
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def tree(self, ctx:utils.Context, user_id:typing.Optional[utils.converters.UserID]):
+    async def tree(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
         engine = 'dot'  # engine.lower()
@@ -113,9 +131,12 @@ class Information(utils.Cog):
 
         # Write to file
         guild_id = localutils.utils.get_guild_id(ctx)
+        user_id = user_id or ctx.author.id
         v = await self.get_tree_dot(ctx, user_id, guild_id=guild_id)
         if v is None:
-            return await ctx.send("You have no family which I can graph.")
+            if user_id == ctx.author.id:
+                return await ctx.send("You have no family which I can graph.")
+            return await ctx.send(f"<@{user_id}> has no family which I can graph.", allowed_mentions=discord.AllowedMentions.none())
         else:
             dot, user_count, root_user_id = v
         try:
@@ -143,8 +164,8 @@ class Information(utils.Cog):
         # Generate flavourtext
         root_user = discord.Object(root_user_id)
         flavour_text = (
-            f"Showing {await localutils.family.utils.get_blood_family_size(self.bot, root_user)} of "
-            f"{await localutils.family.utils.get_family_size(self.bot, root_user)} family members."
+            f"Showing **{await localutils.family.utils.get_blood_family_size(self.bot, root_user)}** of "
+            f"**{await localutils.family.utils.get_family_size(self.bot, root_user)}** family members."
         )
 
         # Output file
@@ -152,8 +173,8 @@ class Information(utils.Cog):
         await ctx.send(flavour_text, file=file)
 
         # Delete what we worked with
-        await asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.png'])
-        await asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.gz'])
+        self.bot.loop.create_task(asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.png']))
+        self.bot.loop.create_task(asyncio.create_subprocess_exec(*['rm', f'{ctx.author.id}.gz']))
 
     @utils.command(hidden=True)
     @commands.bot_has_permissions(attach_files=True)
@@ -196,13 +217,12 @@ class Information(utils.Cog):
         """Leave your parent"""
 
         # See if they're already married
-        await ctx.send("running")
-        try:
-            data = await self.bot.neo4j.cypher(cypher)
-        except aioneo4j.errors.ClientError as e:
-            return await ctx.send(str(e))
-        await ctx.send(f"`data['results'][0]['data']` == ```json\n{json.dumps(data['results'][0]['data'], indent=4)}```")
-        await ctx.send(f"`data` == ```json\n{json.dumps(data, indent=4)}```")
+        async with ctx.typing():
+            try:
+                data = await self.bot.neo4j.cypher(cypher)
+            except aioneo4j.errors.ClientError as e:
+                return await ctx.send(str(e))
+            await ctx.send(f"`data['results'][0]['data']` == ```json\n{json.dumps(data['results'][0]['data'], indent=4)}```")
 
     @utils.Cog.listener()
     async def on_message(self, message):

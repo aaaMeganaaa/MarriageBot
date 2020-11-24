@@ -29,8 +29,12 @@ class FamilyCommands(utils.Cog):
         """Marries to you another user"""
 
         # Check exemptions
-        if user.bot or user == ctx.author:
-            return await ctx.send("Invalid user error.")
+        if user.author.id == ctx.guild.me.id:
+            return await ctx.send("Oh wow. Um. No. No thank you. I'm not interested.")
+        elif user.bot:
+            return await ctx.send("Bots don't really have a concept of marriage, unfortunately.")
+        elif user == ctx.author:
+            return await ctx.send("That's highly unlikely to happen.")
         guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
@@ -44,7 +48,7 @@ class FamilyCommands(utils.Cog):
             matches = data['results'][0]['data']
             permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
             if len(matches) >= permissions.max_partners:
-                return await ctx.send(f"You can only marry {permissions.max_partners} people error")
+                return await ctx.send(f"Unfortunately, can only marry **{permissions.max_partners}** people.")
 
             # See if their partner is already married
             data = await self.bot.neo4j.cypher(
@@ -54,37 +58,21 @@ class FamilyCommands(utils.Cog):
             matches = data['results'][0]['data']
             permissions = await localutils.get_perks_for_user(self.bot, user)
             if len(matches) >= permissions.max_partners:
-                return await ctx.send(f"You can only marry {permissions.max_partners} people error")
+                return await ctx.send(
+                    f"Unfortunately, {user.mention} can only marry **{permissions.max_partners}** people.",
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
 
             # See if 're already related
             if await localutils.family.utils.is_related(self.bot, ctx.author, user):
                 return await ctx.send("You're already related error.")
 
             # See if they want to marry
-            message = await ctx.send(f"{user.mention} do you want to marry {ctx.author.mention} message")
-            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
-            try:
-                def check(p):
-                    if p.message_id != message.id:
-                        return False
-                    if p.user_id not in [user.id, ctx.author.id]:
-                        return False
-                    result = localutils.utils.TickPayloadCheckResult.from_payload(p)
-                    if p.user_id == user.id:
-                        return result
-                    if p.user_id == ctx.author.id:
-                        return str(p.emoji) == result.BOOLEAN_EMOJIS[-1]
-                    return False
-                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
-            except asyncio.TimeoutError:
-                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
-
-            # Check what they said
-            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
-            if not result.is_tick:
-                if payload.user_id == ctx.author.id:
-                    return await ctx.send("Successfully cancelled proposal message")
-                return await ctx.send(f"{ctx.author.mention} they said no message")
+            result = await localutils.utils.send_proposal_message(
+                ctx, user, f"Hey, {user.mention}; do you want to marry {ctx.author.mention}?",
+            )
+            if result is None:
+                return
 
             # Add them to the db
             await self.bot.neo4j.cypher(
@@ -95,7 +83,7 @@ class FamilyCommands(utils.Cog):
             )
 
         # And we done
-        return await ctx.send("Added to database.")
+        return await ctx.send(f"Heck yeah! {ctx.author.mention}, {user.mention}, I now pronounce you married! :3")
 
     @utils.command()
     @utils.checks.bot_is_ready()
@@ -114,7 +102,7 @@ class FamilyCommands(utils.Cog):
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send(f"You're not married to {user_id} error.")
+            return await ctx.send(f"It doesn't actually look like you're married to <@{user_id}>.", allowed_mentions=discord.AllowedMentions.none())
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
@@ -124,7 +112,10 @@ class FamilyCommands(utils.Cog):
         )
 
         # And done
-        return await ctx.send("Deleted field from database.")
+        return await ctx.send(
+            f"Sad times. I've divorced you from <@{user_id}>, {ctx.author.mention} :<",
+            allowed_mentions=localutils.utils.only_mention(ctx.author),
+        )
 
 
 def setup(bot:utils.Bot):

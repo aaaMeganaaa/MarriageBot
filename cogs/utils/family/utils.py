@@ -2,7 +2,6 @@ import typing
 import string
 import random
 
-import discord
 from discord.ext import commands
 
 from .relationship_type import RelationshipType

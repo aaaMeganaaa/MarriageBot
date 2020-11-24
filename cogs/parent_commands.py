@@ -29,8 +29,12 @@ class ParentCommands(utils.Cog):
         """Adopt a user"""
 
         # Check exemptions
-        if user.bot or user == ctx.author:
-            return await ctx.send("Invalid user error.")
+        if user.author.id == ctx.guild.me.id:
+            return await ctx.send("Ha. No. I can do better than you, I feel. Thanks.")
+        elif user.bot:
+            return await ctx.send("You can't adopt bots, I'm afraid :<")
+        elif user == ctx.author:
+            return await ctx.send("Unlikely.")
         guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
@@ -43,11 +47,16 @@ class ParentCommands(utils.Cog):
             )
             matches = data['results'][0]['data']
             if matches:
-                return await ctx.send("They have a parent error.")
+                return await ctx.send(
+                    f"Sorry, {ctx.author}, it looks like {user.mention} already has a parent :<",
+                    allowed_mentions=localutils.utils.only_mention(ctx.author)
+                )
 
             # See if they're already related
             if await localutils.family.utils.is_related(self.bot, ctx.author, user):
-                return await ctx.send("You're already related error.")
+                return await ctx.send(
+                    f"It looks like you're already related! Run ``{ctx.clean_prefix}relationship @{ctx.author!s} @{user!s}`` to see how, if you don't know."
+                )
 
             # Get their permissions
             permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
@@ -59,33 +68,14 @@ class ParentCommands(utils.Cog):
             )
             matches = data['results'][0]['data']
             if len(matches) > permissions.max_children:
-                return await ctx.send(f"You can only have {permissions.max_children} error.")
+                return await ctx.send(f"Sorry, {ctx.author.mention}; you can only have **{permissions.max_children}** children :<")
 
             # See if they want to adopt
-            message = await ctx.send(f"{user.mention} do you want to be the child of {ctx.author.mention} message")
-            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
-            try:
-                def check(p):
-                    if p.message_id != message.id:
-                        return False
-                    if p.user_id not in [user.id, ctx.author.id]:
-                        return False
-                    result = localutils.utils.TickPayloadCheckResult.from_payload(p)
-                    if p.user_id == user.id:
-                        return result
-                    if p.user_id == ctx.author.id:
-                        return str(p.emoji) == result.BOOLEAN_EMOJIS[-1]
-                    return False
-                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
-            except asyncio.TimeoutError:
-                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
-
-            # Check what they said
-            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
-            if not result.is_tick:
-                if payload.user_id == ctx.author.id:
-                    return await ctx.send("Successfully cancelled proposal message")
-                return await ctx.send(f"{ctx.author.mention} they said no message")
+            result = await localutils.utils.send_proposal_message(
+                ctx, user, f"Hey, {user.mention}, do you want to let {ctx.author.mention} adopt you?",
+            )
+            if result is None:
+                return
 
             # Add them to the db
             data = await self.bot.neo4j.cypher(
@@ -96,7 +86,7 @@ class ParentCommands(utils.Cog):
             )
 
         # And we're done
-        return await ctx.send("Added to database.")
+        return await ctx.send(f"Heck yeah! {ctx.author.mention}, say hello to your new child, {user.mention}!")
 
     @utils.command()
     @utils.checks.bot_is_ready()
@@ -105,8 +95,10 @@ class ParentCommands(utils.Cog):
         """Make a user your parent"""
 
         # Check exemptions
-        if user.bot or user == ctx.author:
-            return await ctx.send("Invalid user error.")
+        if user.author.id == ctx.guild.me.id:
+            return await ctx.send("Hmmmmmm I'm flattered, but no. I'm okay. Thank you.")
+        elif user == ctx.author:
+            return await ctx.send("Unlikely.")
         guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
@@ -119,11 +111,13 @@ class ParentCommands(utils.Cog):
             )
             matches = data['results'][0]['data']
             if matches:
-                return await ctx.send("You have a parent error.")
+                return await ctx.send("It looks like you already have a parent, unfortunately!")
 
             # See if they're already related
             if await localutils.family.utils.is_related(self.bot, ctx.author, user):
-                return await ctx.send("You're already related error.")
+                return await ctx.send(
+                    f"It looks like you're already related! Run ``{ctx.clean_prefix}relationship @{ctx.author!s} @{user!s}`` to see how, if you don't know."
+                )
 
             # Get their permissions
             permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
@@ -135,33 +129,16 @@ class ParentCommands(utils.Cog):
             )
             matches = data['results'][0]['data']
             if len(matches) > permissions.max_children:
-                return await ctx.send(f"They can only have {permissions.max_children} error.")
+                return await ctx.send(
+                    f"Sorry, {ctx.author.mention}; they already have **{permissions.max_children}** children - they're at their maximum :<"
+                )
 
             # See if they want to adopt
-            message = await ctx.send(f"{user.mention} do you want to be the parent of {ctx.author.mention} message")
-            localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
-            try:
-                def check(p):
-                    if p.message_id != message.id:
-                        return False
-                    if p.user_id not in [user.id, ctx.author.id]:
-                        return False
-                    result = localutils.utils.TickPayloadCheckResult.from_payload(p)
-                    if p.user_id == user.id:
-                        return result
-                    if p.user_id == ctx.author.id:
-                        return str(p.emoji) == result.BOOLEAN_EMOJIS[-1]
-                    return False
-                payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
-            except asyncio.TimeoutError:
-                return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
-
-            # Check what they said
-            result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
-            if not result.is_tick:
-                if payload.user_id == ctx.author.id:
-                    return await ctx.send("Successfully cancelled proposal message")
-                return await ctx.send(f"{ctx.author.mention} they said no message")
+            result = await localutils.utils.send_proposal_message(
+                ctx, user, f"Hey, {user.mention}, do you want to adopt {ctx.author.mention}?",
+            )
+            if result is None:
+                return
 
             # Add them to the db
             await self.bot.neo4j.cypher(
@@ -172,11 +149,11 @@ class ParentCommands(utils.Cog):
             )
 
         # And we're done
-        return await ctx.send("Added to database.")
+        return await ctx.send(f"Heck yeah! {ctx.author.mention}, say hello to your new parent, {user.mention}!")
 
     @utils.command(aliases=['runaway', 'leaveparent'])
     @utils.checks.bot_is_ready()
-    @commands.bot_has_permissions(send_messages=True, add_reactions=True)
+    @commands.bot_has_permissions(send_messages=True)
     async def emancipate(self, ctx:utils.Context):
         """Leave your parent"""
 
@@ -190,7 +167,7 @@ class ParentCommands(utils.Cog):
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send("You're not adopted error.")
+            return await ctx.send("It doesn't look like you have a parent, actually :/")
         parent_id = matches[0]['row'][0]['user_id']
 
         # Remove them from the db
@@ -199,17 +176,15 @@ class ParentCommands(utils.Cog):
             (:FamilyTreeMember)-[t:PARENT_OF]->(n) DELETE r, t""",
             author_id=ctx.author.id, parent_id=parent_id, guild_id=guild_id,
         )
-        return await ctx.send("Deleted from database.")
+        return await ctx.send(f"Alright, {ctx.author.mention}; I've removed your parent :<")
 
     @utils.command()
     @utils.checks.bot_is_ready()
-    @commands.bot_has_permissions(send_messages=True, add_reactions=True)
+    @commands.bot_has_permissions(send_messages=True)
     async def disown(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
         """Leave your parent"""
 
         # Make sure they said someone
-        if not user_id:
-            raise utils.errors.MissingRequiredArgumentString("user_id")
         guild_id = localutils.utils.get_guild_id(ctx)
 
         # Check they're actually a parent
@@ -220,7 +195,10 @@ class ParentCommands(utils.Cog):
         )
         matches = data['results'][0]['data']
         if not matches:
-            return await ctx.send(f"You're not the parent of {user_id} error.")
+            return await ctx.send(
+                f"If doesn't look like you're the parent of <@{user_id}>, actually :/",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
@@ -230,7 +208,10 @@ class ParentCommands(utils.Cog):
         )
 
         # And done
-        return await ctx.send("Deleted field from database.")
+        return await ctx.send(
+            f"Alright, {ctx.author.mention}; I've disowned <@{user_id}> from you :<",
+            allowed_mentions=localutils.utils.only_mention(ctx.author),
+        )
 
 
 def setup(bot:utils.Bot):
