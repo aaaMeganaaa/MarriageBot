@@ -103,6 +103,19 @@ async def get_all_family_member_nodes(bot, user, guild_id:int=0) -> typing.List[
     return matches
 
 
+async def is_family_pending_proposal(bot, user, guild_id:int=0) -> typing.List[dict]:
+    """
+    A cypher that calls the deltaStepping algorithm to grab all the users in a
+    given family's tree.
+    """
+
+    all_family_nodes = await get_all_family_member_nodes(bot, user, guild_id)
+    for row in all_family_nodes:
+        if row["row"].get("pending_proposal"):
+            return True
+    return False
+
+
 async def get_blood_family_member_nodes(bot, user, guild_id:int=0) -> typing.List[dict]:
     """
     A cypher that'll call the deltaStepping algorithm to be able to grab every node from

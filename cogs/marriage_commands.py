@@ -16,7 +16,7 @@ class FamilyCommands(utils.Cog):
 
         # We need to run this or gds complains that none of the paths exist
         await self.bot.neo4j.cypher(
-            r"""MERGE (u:FamilyTreeMember {user_id: -1, guild_id: -1})
+            r"""MERGE (u:FamilyTreeMember {user_id: -1, guild_id: -1, pending_proposal: false})
             MERGE (u)-[:MARRIED_TO]->(u)-[:PARENT_OF]->(u)-[:CHILD_OF]->(u)"""
         )
 
