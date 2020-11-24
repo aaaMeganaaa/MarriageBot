@@ -67,8 +67,8 @@ class FamilyCommands(utils.Cog):
 
             # Add them to the db
             await self.bot.neo4j.cypher(
-                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
-                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
+                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})
+                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
                 MERGE (n)-[:MARRIED_TO {timestamp: $timestamp}]->(m)-[:MARRIED_TO {timestamp: $timestamp}]->(n)""",
                 author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
             )
