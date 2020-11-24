@@ -31,23 +31,32 @@ class FamilyCommands(utils.Cog):
         # Check exemptions
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
+        guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
-        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=0):
-
-            # Get their permissions
-            permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
+        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=guild_id):
 
             # See if they're already married
             data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {guild_id: 0})-[:MARRIED_TO]->(:FamilyTreeMember) WHERE n.user_id in [$author_id, $user_id] RETURN n",
-                author_id=ctx.author.id, user_id=user.id
+                r"MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->(n:FamilyTreeMember) RETURN n",
+                user_id=ctx.author.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
+            permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
             if len(matches) >= permissions.max_partners:
                 return await ctx.send(f"You can only marry {permissions.max_partners} people error")
 
-            # See if they're already related
+            # See if their partner is already married
+            data = await self.bot.neo4j.cypher(
+                r"MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->(n:FamilyTreeMember) RETURN n",
+                user_id=user.id, guild_id=guild_id,
+            )
+            matches = data['results'][0]['data']
+            permissions = await localutils.get_perks_for_user(self.bot, user)
+            if len(matches) >= permissions.max_partners:
+                return await ctx.send(f"You can only marry {permissions.max_partners} people error")
+
+            # See if 're already related
             if await localutils.family.utils.is_related(self.bot, ctx.author, user):
                 return await ctx.send("You're already related error.")
 
@@ -79,10 +88,10 @@ class FamilyCommands(utils.Cog):
 
             # Add them to the db
             await self.bot.neo4j.cypher(
-                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})
-                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
+                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})
+                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})
                 MERGE (n)-[:MARRIED_TO {timestamp: $timestamp}]->(m)-[:MARRIED_TO {timestamp: $timestamp}]->(n)""",
-                author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
+                author_id=ctx.author.id, user_id=user.id, guild_id=guild_id, timestamp=dt.utcnow().timestamp(),
             )
 
         # And we done
@@ -94,11 +103,14 @@ class FamilyCommands(utils.Cog):
     async def divorce(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
         """Divorces you form your partner"""
 
+        # Grab the guild id
+        guild_id = localutils.utils.get_guild_id(ctx)
+
         # See if they're already married
         data = await self.bot.neo4j.cypher(
-            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:MARRIED_TO]->
-            (m:FamilyTreeMember {user_id: $partner_id, guild_id: 0}) RETURN m""",
-            author_id=ctx.author.id, partner_id=user_id
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})-[:MARRIED_TO]->
+            (m:FamilyTreeMember {user_id: $partner_id, guild_id: $guild_id}) RETURN m""",
+            author_id=ctx.author.id, partner_id=user_id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -106,9 +118,9 @@ class FamilyCommands(utils.Cog):
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
-            r"""MATCH (:FamilyTreeMember {user_id: $author_id, guild_id: 0})<-[r:MARRIED_TO]->
-            (:FamilyTreeMember {user_id: $partner_id, guild_id: 0}) DELETE r""",
-            author_id=ctx.author.id, partner_id=user_id
+            r"""MATCH (:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})<-[r:MARRIED_TO]->
+            (:FamilyTreeMember {user_id: $partner_id, guild_id: $guild_id}) DELETE r""",
+            author_id=ctx.author.id, partner_id=user_id, guild_id=guild_id,
         )
 
         # And done

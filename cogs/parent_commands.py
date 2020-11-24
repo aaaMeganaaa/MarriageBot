@@ -31,14 +31,15 @@ class ParentCommands(utils.Cog):
         # Check exemptions
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
+        guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
-        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=0):
+        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=guild_id):
 
             # See if they already have a parent
             data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
-                user_id=user.id
+                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+                user_id=user.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
             if matches:
@@ -53,8 +54,8 @@ class ParentCommands(utils.Cog):
 
             # See how many children they're allowed to have
             data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
-                user_id=ctx.author.id
+                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
+                user_id=ctx.author.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
             if len(matches) > permissions.max_children:
@@ -88,10 +89,10 @@ class ParentCommands(utils.Cog):
 
             # Add them to the db
             data = await self.bot.neo4j.cypher(
-                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})
-                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0})
+                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})
+                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})
                 MERGE (n)-[:PARENT_OF {timestamp: $timestamp}]->(m)-[:CHILD_OF {timestamp: $timestamp}]->(n)""",
-                author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
+                author_id=ctx.author.id, user_id=user.id, guild_id=guild_id, timestamp=dt.utcnow().timestamp(),
             )
 
         # And we're done
@@ -106,14 +107,15 @@ class ParentCommands(utils.Cog):
         # Check exemptions
         if user.bot or user == ctx.author:
             return await ctx.send("Invalid user error.")
+        guild_id = localutils.utils.get_guild_id(ctx)
 
         # Make sure they can't propose to other people
-        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=0):
+        async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=guild_id):
 
             # See they already have a parent
             data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
-                user_id=ctx.author.id
+                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+                user_id=ctx.author.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
             if matches:
@@ -128,8 +130,8 @@ class ParentCommands(utils.Cog):
 
             # See how many children they're allowed to have
             data = await self.bot.neo4j.cypher(
-                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
-                user_id=user.id
+                r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
+                user_id=user.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
             if len(matches) > permissions.max_children:
@@ -163,10 +165,10 @@ class ParentCommands(utils.Cog):
 
             # Add them to the db
             await self.bot.neo4j.cypher(
-                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: 0, pending_proposal: false})
-                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: 0, pending_proposal: false})
+                r"""MERGE (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})
+                MERGE (m:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})
                 MERGE (n)-[:CHILD_OF {timestamp: $timestamp}]->(m)-[:PARENT_OF {timestamp: $timestamp}]->(n)""",
-                author_id=ctx.author.id, user_id=user.id, timestamp=dt.utcnow().timestamp()
+                author_id=ctx.author.id, user_id=user.id, guild_id=guild_id, timestamp=dt.utcnow().timestamp(),
             )
 
         # And we're done
@@ -178,10 +180,13 @@ class ParentCommands(utils.Cog):
     async def emancipate(self, ctx:utils.Context):
         """Leave your parent"""
 
+        # Grab the guild id
+        guild_id = localutils.utils.get_guild_id(ctx)
+
         # See if they're already married
         data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
-            author_id=ctx.author.id
+            r"MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+            author_id=ctx.author.id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -190,9 +195,9 @@ class ParentCommands(utils.Cog):
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
-            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:CHILD_OF]->
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})-[r:CHILD_OF]->
             (:FamilyTreeMember)-[t:PARENT_OF]->(n) DELETE r, t""",
-            author_id=ctx.author.id, parent_id=parent_id
+            author_id=ctx.author.id, parent_id=parent_id, guild_id=guild_id,
         )
         return await ctx.send("Deleted from database.")
 
@@ -205,12 +210,13 @@ class ParentCommands(utils.Cog):
         # Make sure they said someone
         if not user_id:
             raise utils.errors.MissingRequiredArgumentString("user_id")
+        guild_id = localutils.utils.get_guild_id(ctx)
 
         # Check they're actually a parent
         data = await self.bot.neo4j.cypher(
-            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[:PARENT_OF]->
-            (m:FamilyTreeMember {user_id: $user_id, guild_id: 0}) RETURN m""",
-            author_id=ctx.author.id, user_id=user_id
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})-[:PARENT_OF]->
+            (m:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id}) RETURN m""",
+            author_id=ctx.author.id, user_id=user_id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -218,9 +224,9 @@ class ParentCommands(utils.Cog):
 
         # Remove them from the db
         await self.bot.neo4j.cypher(
-            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: 0})-[r:PARENT_OF]->
-            (:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[t:CHILD_OF]->(n) DELETE r, t""",
-            author_id=ctx.author.id, user_id=user_id
+            r"""MATCH (n:FamilyTreeMember {user_id: $author_id, guild_id: $guild_id})-[r:PARENT_OF]->
+            (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[t:CHILD_OF]->(n) DELETE r, t""",
+            author_id=ctx.author.id, user_id=user_id, guild_id=guild_id,
         )
 
         # And done

@@ -100,7 +100,7 @@ async def get_all_family_member_nodes(bot, user, guild_id:int=0) -> typing.List[
         }) YIELD nodeId, distance
         WHERE distance < gds.util.infinity()
         RETURN gds.util.asNode(nodeId), distance""",
-        user_id=user.id, guild_id=guild_id
+        user_id=user.id, guild_id=guild_id,
     )
     matches = data['results'][0]['data']
     return matches
@@ -138,26 +138,26 @@ async def get_blood_family_member_nodes(bot, user, guild_id:int=0) -> typing.Lis
         }) YIELD nodeId, distance
         WHERE distance < gds.util.infinity()
         RETURN gds.util.asNode(nodeId), distance""",
-        user_id=user.id, guild_id=guild_id
+        user_id=user.id, guild_id=guild_id,
     )
     matches = data['results'][0]['data']
     return matches
 
 
-async def get_family_size(bot, user) -> int:
+async def get_family_size(bot, user, guild_id:int=0) -> int:
     """
     A cypher returning the size of a user's family.
     """
 
-    return len(await get_all_family_member_nodes(bot, user))
+    return len(await get_all_family_member_nodes(bot, user, guild_id=guild_id))
 
 
-async def get_blood_family_size(bot, user) -> int:
+async def get_blood_family_size(bot, user, guild_id:int=0) -> int:
     """
     A cypher returning the size of a user's family when only considering blood relatives.
     """
 
-    return len(await get_blood_family_member_nodes(bot, user))
+    return len(await get_blood_family_member_nodes(bot, user, guild_id=guild_id))
 
 
 async def get_relationship(bot, user, user2, guild_id:int=0) -> typing.Optional[typing.List[str]]:

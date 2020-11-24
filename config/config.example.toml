@@ -4,6 +4,7 @@ dm_uncaught_errors = false  # Whether or not to DM the owners when unhandled err
 default_prefix = "!"  # The prefix for the bot's commands
 support_guild_id = 0  # The ID of the support guild where the perk roles are stored
 event_webhook_url = ""  # Some events will be posted via webhook to this url
+is_server_specific = false  # Whether or not the bot is set to server specific
 
 # The intents that the bot should start with
 [intents]

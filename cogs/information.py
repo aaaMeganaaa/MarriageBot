@@ -30,10 +30,11 @@ class Information(utils.Cog):
     async def partner(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you who a given user's partner is"""
 
+        guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
         data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:MARRIED_TO]->(m:FamilyTreeMember) RETURN m",
-            user_id=user_id
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->(m:FamilyTreeMember) RETURN m",
+            user_id=user_id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -48,10 +49,11 @@ class Information(utils.Cog):
     async def children(self, ctx:utils.Context, user:discord.Member=None):
         """Gives you a list of someone's children"""
 
+        guild_id = localutils.utils.get_guild_id(ctx)
         user = user or ctx.author
         data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
-            user_id=user.id
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:PARENT_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=user.id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -67,7 +69,8 @@ class Information(utils.Cog):
     async def relationship(self, ctx:utils.Context, user:discord.Member):
         """Tells you if you're related to a user"""
 
-        return await ctx.send(await localutils.family.utils.get_relationship(self.bot, ctx.author, user) or "You aren't related.")
+        guild_id = localutils.utils.get_guild_id(ctx)
+        return await ctx.send(await localutils.family.utils.get_relationship(self.bot, ctx.author, user, guild_id=guild_id) or "You aren't related.")
 
     @utils.command(aliases=['fs', 'treesize', 'ts'])
     @utils.checks.bot_is_ready()
@@ -75,9 +78,10 @@ class Information(utils.Cog):
     async def familysize(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
+        guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
-        blood_size = await localutils.family.utils.get_blood_family_size(self.bot, discord.Object(user_id))
-        full_size = await localutils.family.utils.get_family_size(self.bot, discord.Object(user_id))
+        blood_size = await localutils.family.utils.get_blood_family_size(self.bot, discord.Object(user_id), guild_id=guild_id)
+        full_size = await localutils.family.utils.get_family_size(self.bot, discord.Object(user_id), guild_id=guild_id)
         return await ctx.send(f"<@{user_id}>'s family size is {blood_size} blood relatives and {full_size} general relatives.", allowed_mentions=discord.AllowedMentions.none())
 
     @utils.command(aliases=['mother', 'father', 'mom', 'dad', 'mum'])
@@ -86,10 +90,11 @@ class Information(utils.Cog):
     async def parent(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you who a given user's parent is"""
 
+        guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
         data = await self.bot.neo4j.cypher(
-            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: 0})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
-            user_id=user_id
+            r"MATCH (n:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:CHILD_OF]->(m:FamilyTreeMember) RETURN m",
+            user_id=user_id, guild_id=guild_id,
         )
         matches = data['results'][0]['data']
         if not matches:
@@ -107,7 +112,8 @@ class Information(utils.Cog):
             return await ctx.send("The Graphviz engine you provided isn't valid.")
 
         # Write to file
-        v = await self.get_tree_dot(ctx, user_id)
+        guild_id = localutils.utils.get_guild_id(ctx)
+        v = await self.get_tree_dot(ctx, user_id, guild_id=guild_id)
         if v is None:
             return await ctx.send("You have no family which I can graph.")
         else:
@@ -157,7 +163,8 @@ class Information(utils.Cog):
     async def rawtree(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
         """Tells you if you're related to a user"""
 
-        v = await self.get_tree_dot(ctx, user_id)
+        guild_id = localutils.utils.get_guild_id(ctx)
+        v = await self.get_tree_dot(ctx, user_id, guild_id=guild_id)
         if v is None:
             return await ctx.send("You have no family which I can graph.")
         else:
@@ -165,16 +172,16 @@ class Information(utils.Cog):
         file = discord.File(io.StringIO(dot), filename="dot.gz")
         return await ctx.send(file=file)
 
-    async def get_tree_dot(self, ctx, user_id):
+    async def get_tree_dot(self, ctx, user_id:int, guild_id:int=0):
         """
         Gets a fully written dot script for a given user's tree.
         """
 
         # Get dot script
         user_id = user_id or ctx.author.id
-        root_user_id = await localutils.family.utils.get_tree_root_user_id(self.bot, discord.Object(user_id))
+        root_user_id = await localutils.family.utils.get_tree_root_user_id(self.bot, discord.Object(user_id), guild_id=guild_id)
         root_user = discord.Object(root_user_id)
-        family = await localutils.family.utils.get_tree_expanded_from_root(self.bot, root_user)
+        family = await localutils.family.utils.get_tree_expanded_from_root(self.bot, root_user, guild_id=guild_id)
         root_family_member_object = localutils.family.FamilyMember.get_family_from_cypher(family, root_user_id=root_user_id)
         if root_family_member_object is None:
             return None
