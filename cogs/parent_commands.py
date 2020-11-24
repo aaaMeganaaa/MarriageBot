@@ -64,7 +64,17 @@ class ParentCommands(utils.Cog):
             message = await ctx.send(f"{user.mention} do you want to be the child of {ctx.author.mention} message")
             localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
             try:
-                check = lambda p: p.user_id == user.id and p.message_id == message.id and localutils.utils.TickPayloadCheckResult.from_payload(p)
+                def check(p):
+                    if p.message_id != message.id:
+                        return False
+                    if p.user_id not in [user.id, ctx.author.id]:
+                        return False
+                    result = localutils.utils.TickPayloadCheckResult.from_payload(p)
+                    if p.user_id == user.id:
+                        return result
+                    if p.user_id == ctx.author.id:
+                        return str(p.emoji) == result.BOOLEAN_EMOJIS[-1]
+                    return False
                 payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
             except asyncio.TimeoutError:
                 return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
@@ -72,6 +82,8 @@ class ParentCommands(utils.Cog):
             # Check what they said
             result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
             if not result.is_tick:
+                if payload.user_id == ctx.author:
+                    return await ctx.send("Successfully cancelled proposal message")
                 return await ctx.send(f"{ctx.author.mention} they said no message")
 
             # Add them to the db
@@ -127,7 +139,17 @@ class ParentCommands(utils.Cog):
             message = await ctx.send(f"{user.mention} do you want to be the parent of {ctx.author.mention} message")
             localutils.utils.TickPayloadCheckResult.add_tick_emojis_non_async(message)
             try:
-                check = lambda p: p.user_id == user.id and p.message_id == message.id and localutils.utils.TickPayloadCheckResult.from_payload(p)
+                def check(p):
+                    if p.message_id != message.id:
+                        return False
+                    if p.user_id not in [user.id, ctx.author.id]:
+                        return False
+                    result = localutils.utils.TickPayloadCheckResult.from_payload(p)
+                    if p.user_id == user.id:
+                        return result
+                    if p.user_id == ctx.author.id:
+                        return str(p.emoji) == result.BOOLEAN_EMOJIS[-1]
+                    return False
                 payload = await self.bot.wait_for("raw_reaction_add", check=check, timeout=60)
             except asyncio.TimeoutError:
                 return await ctx.send(f"{ctx.author.mention} your proposal timed out error")
@@ -135,6 +157,8 @@ class ParentCommands(utils.Cog):
             # Check what they said
             result = localutils.utils.TickPayloadCheckResult.from_payload(payload)
             if not result.is_tick:
+                if payload.user_id == ctx.author:
+                    return await ctx.send("Successfully cancelled proposal message")
                 return await ctx.send(f"{ctx.author.mention} they said no message")
 
             # Add them to the db
