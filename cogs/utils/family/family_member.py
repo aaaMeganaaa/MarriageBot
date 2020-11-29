@@ -1,6 +1,7 @@
 import asyncio
 
 from .relationship_type import RelationshipType
+from .custom_tree_display import CustomTreeDisplay
 from .utils import get_random_string
 
 
@@ -117,7 +118,7 @@ class FamilyMemberDotGenerator(object):
         return output_string
 
     @classmethod
-    async def expand_downwards_to_dot(cls, root_user) -> str:
+    async def expand_downwards_to_dot(cls, root_user, tree_display:CustomTreeDisplay=None) -> str:
         """
         Expand this tree downwards into a dot script.
         """
@@ -125,11 +126,15 @@ class FamilyMemberDotGenerator(object):
         added_users = 0
         output_string = (
             # """digraph{rankdir=LR;overlap=false;concentrate=true;ordering=out;"""
-            """digraph{rankdir=LR;"""
+            # """digraph{rankdir=LR;"""
             # """digraph{rankdir=TB;"""
-            """node[shape=box,fontcolor="#FFFFFF",color="#000000",fillcolor="#000000",style=filled];"""
-            """edge[dir=none,color="#000000"];"""
+            # """node[shape=box,fontcolor="#FFFFFF",color="#000000",fillcolor="#000000",style=filled];"""
+            # """edge[dir=none,color="#000000"];"""
+            """digraph{"""
         )
+        if tree_display is None:
+            tree_display = CustomTreeDisplay()
+        output_string += tree_display.get_graphviz_customisation_string()
 
         # Loop through every user and append their partners
         root_user._main = True

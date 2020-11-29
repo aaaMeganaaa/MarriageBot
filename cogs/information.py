@@ -206,7 +206,10 @@ class Information(utils.Cog):
         root_family_member_object = localutils.family.FamilyMember.get_family_from_cypher(family, root_user_id=root_user_id)
         if root_family_member_object is None:
             return None
-        dot, user_count = await localutils.family.FamilyMemberDotGenerator.expand_downwards_to_dot(root_family_member_object)
+        async with self.bot.database() as db:
+            tree_display = await localutils.family.CustomTreeDisplay.fetch_custom_tree(db, ctx.author.id)
+        tree_display.highlighted_user_id = user_id
+        dot, user_count = await localutils.family.FamilyMemberDotGenerator.expand_downwards_to_dot(root_family_member_object, tree_display=tree_display)
         return dot, user_count, root_user_id
 
     @utils.command()
