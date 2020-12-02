@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime as dt
 
 import aioneo4j
@@ -13,7 +12,7 @@ class ParentCommands(utils.Cog):
 
     async def cache_setup(self, db):
         """
-        Set up the cache stuff needed for this cog
+        Set up the cache stuff needed for this cog.
         """
 
         # We need to run this or gds complains that none of the paths exist
@@ -26,7 +25,9 @@ class ParentCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def adopt(self, ctx:utils.Context, user:discord.Member):
-        """Adopt a user"""
+        """
+        Adopt a user.
+        """
 
         # Check exemptions
         if user.id == ctx.guild.me.id:
@@ -92,7 +93,9 @@ class ParentCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def makeparent(self, ctx:utils.Context, user:discord.Member):
-        """Make a user your parent"""
+        """
+        Make a user your parent.
+        """
 
         # Check exemptions
         if user.id == ctx.guild.me.id:
@@ -155,7 +158,9 @@ class ParentCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def emancipate(self, ctx:utils.Context):
-        """Leave your parent"""
+        """
+        Leave your parent.
+        """
 
         # Grab the guild id
         guild_id = localutils.utils.get_guild_id(ctx)
@@ -182,7 +187,9 @@ class ParentCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def disown(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
-        """Leave your parent"""
+        """
+        Leave your parent.
+        """
 
         # Make sure they said someone
         guild_id = localutils.utils.get_guild_id(ctx)

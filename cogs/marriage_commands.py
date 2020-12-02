@@ -12,7 +12,7 @@ class FamilyCommands(utils.Cog):
 
     async def cache_setup(self, db):
         """
-        Set up the cache stuff needed for this cog
+        Set up the cache stuff needed for this cog.
         """
 
         # We need to run this or gds complains that none of the paths exist
@@ -25,7 +25,9 @@ class FamilyCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def marry(self, ctx:utils.Context, user:discord.Member):
-        """Marries to you another user"""
+        """
+        Marries to you another user.
+        """
 
         # Check exemptions
         if user.id == ctx.guild.me.id:
@@ -88,7 +90,9 @@ class FamilyCommands(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True, add_reactions=True)
     async def divorce(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
-        """Divorces you form your partner"""
+        """
+        Divorces you form your partner.
+        """
 
         # Grab the guild id
         guild_id = localutils.utils.get_guild_id(ctx)

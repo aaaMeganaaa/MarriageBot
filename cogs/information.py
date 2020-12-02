@@ -15,7 +15,7 @@ class Information(utils.Cog):
 
     async def cache_setup(self, db):
         """
-        Set up the cache stuff needed for this cog
+        Set up the cache stuff needed for this cog.
         """
 
         # We need to run this or gds complains that none of the paths exist
@@ -28,7 +28,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def partner(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Tells you who a given user's partner is"""
+        """
+        Tells you who a given user's partner is.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
@@ -51,7 +53,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def children(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Gives you a list of someone's children"""
+        """
+        Gives you a list of someone's children.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
@@ -75,7 +79,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def relationship(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Tells you if you're related to a user"""
+        """
+        Tells you if you're related to a user.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         text = await localutils.family.utils.get_relationship(self.bot, ctx.author, discord.Object(user_id), guild_id=guild_id)
@@ -85,7 +91,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def familysize(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Tells you if you're related to a user"""
+        """
+        Tells you if you're related to a user.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
@@ -102,7 +110,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def parent(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Tells you who a given user's parent is"""
+        """
+        Tells you who a given user's parent is.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         user_id = user_id or ctx.author.id
@@ -123,7 +133,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def tree(self, ctx:utils.Context, *, user_id:utils.converters.UserID=None):
-        """Tells you if you're related to a user"""
+        """
+        Tells you if you're related to a user.
+        """
 
         engine = 'dot'  # engine.lower()
         if engine not in ['dot', 'neato', 'fdp', 'sfdp', 'twopi', 'circo', 'patchwork', 'osage']:
@@ -182,7 +194,9 @@ class Information(utils.Cog):
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
     async def rawtree(self, ctx:utils.Context, user_id:utils.converters.UserID=None):
-        """Tells you if you're related to a user"""
+        """
+        Tells you if you're related to a user.
+        """
 
         guild_id = localutils.utils.get_guild_id(ctx)
         v = await self.get_tree_dot(ctx, user_id, guild_id=guild_id)
