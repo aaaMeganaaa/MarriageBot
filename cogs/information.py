@@ -1,6 +1,5 @@
 import asyncio
 import io
-import typing
 import json
 
 import aioneo4j
