@@ -25,14 +25,21 @@ class Simulation(utils.Cog):
     }
 
     async def get_reaction_gif(self, reaction_type:str):
-        """Pings the endpoint, gets a reaction gif, bish bash bosh"""
+        """
+        Pings the endpoint, gets a reaction gif, bish bash bosh.
+        """
 
+        # Make sure we can run this command
         if not self.bot.config.get('command_data', {}).get('weeb_sh_api_key'):
             self.logger.debug("No API key set for Weeb.sh")
             return None
+
+        # Make sure we can use this input
         if reaction_type not in self.ALLOWED_REACTIONS:
             self.logger.debug(f"Invalid reaction {reaction_type} passed to get_reaction_gif")
             return None
+
+        # Set up our params
         headers = {
             "User-Agent": self.bot.user_agent,
             "Authorization": f"Wolke {self.bot.config['command_data']['weeb_sh_api_key']}"
@@ -41,6 +48,8 @@ class Simulation(utils.Cog):
             "type": reaction_type,
             "nsfw": "false",
         }
+
+        # Run request wew
         async with self.bot.session.get(f"{self.BASE_URL}/images/random", params=params, headers=headers) as r:
             try:
                 data = await r.json()
@@ -50,21 +59,19 @@ class Simulation(utils.Cog):
                 return None
             if str(r.status)[0] == "2":
                 return data['url']
-        self.logger.warning(f"Error from Weeb.sh: {json.dumps(data)}")
+
+        # Oh no it wasn't a good boy oh jeez oh heck
+        self.logger.warning(f"Error from Weeb.sh: {data}")
         return None
 
     async def get_gif_url(self, guild_id:int, interaction_type:str) -> typing.Optional[str]:
         """
-        Get the GIF URL for the
+        Get the GIF URL for the given guild ID and interaction type.
         """
 
         async with self.bot.database() as db:
-            rows = await db("SELECT gifs_enabled FROM guild_settings WHERE guild_id=$1", guild_id)
-        if not rows:
-            enabled = True
-        else:
-            enabled = rows[0]['gifs_enabled']
-            enabled = True if enabled is None else enabled
+            rows = await db("SELECT gifs_enabled FROM guild_settings WHERE guild_id=ANY($1::BIGINT[]) ORDER BY guild_id DESC", [guild_id, 0])
+        enabled = rows[0]['gifs_enabled']
         if enabled is False:
             return None
         return await self.get_reaction_gif(self.bot, interaction_type)
