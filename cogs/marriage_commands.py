@@ -48,7 +48,7 @@ class FamilyCommands(utils.Cog):
             )
             matches = data['results'][0]['data']
             for m in matches:
-                if m['row']['user_id'] == user.id:
+                if m['row'][0]['user_id'] == user.id:
                     return await ctx.send("You two are already married .-.")
             permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
             if len(matches) >= permissions.max_partners:
