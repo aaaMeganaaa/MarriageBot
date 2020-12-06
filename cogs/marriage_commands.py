@@ -23,7 +23,7 @@ class FamilyCommands(utils.Cog):
 
     @utils.command(aliases=['propose'])
     @utils.checks.bot_is_ready()
-    @commands.bot_has_permissions(send_messages=True, add_reactions=True)
+    @commands.bot_has_permissions(send_messages=True, add_reactions=True, external_emojis=True)
     async def marry(self, ctx:utils.Context, user:discord.Member):
         """
         Marries to you another user.
