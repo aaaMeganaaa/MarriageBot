@@ -23,7 +23,7 @@ class Simulation(utils.Cog):
         "punch",
     }
 
-    async def get_reaction_gif(self, reaction_type:str) -> typing.Optional[str]:
+    async def get_gif_url(self, reaction_type:str) -> typing.Optional[str]:
         """
         Pings the endpoint, gets a reaction gif, bish bash bosh.
         """
@@ -35,7 +35,7 @@ class Simulation(utils.Cog):
 
         # Make sure we can use this input
         if reaction_type not in self.ALLOWED_REACTIONS:
-            self.logger.debug(f"Invalid reaction {reaction_type} passed to get_reaction_gif")
+            self.logger.debug(f"Invalid reaction {reaction_type} passed to get_gif_url")
             return None
 
         # Set up our params
@@ -63,7 +63,7 @@ class Simulation(utils.Cog):
         self.logger.warning(f"Error from Weeb.sh: {data}")
         return None
 
-    async def get_gif_url(self, guild_id:int, interaction_type:str) -> typing.Optional[str]:
+    async def get_reaction_gif(self, guild_id:int, interaction_type:str) -> typing.Optional[str]:
         """
         Get the GIF URL for the given guild ID and interaction type.
         """
@@ -73,7 +73,7 @@ class Simulation(utils.Cog):
         enabled = rows[0]['gifs_enabled']
         if enabled is False:
             return None
-        return await self.get_reaction_gif(interaction_type)
+        return await self.get_gif_url(interaction_type)
 
     @utils.command(aliases=['snuggle', 'cuddle'])
     @commands.bot_has_permissions(send_messages=True)
