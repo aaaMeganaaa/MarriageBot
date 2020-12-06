@@ -1,5 +1,4 @@
 import random
-import json
 import typing
 
 import discord
@@ -24,7 +23,7 @@ class Simulation(utils.Cog):
         "punch",
     }
 
-    async def get_reaction_gif(self, reaction_type:str):
+    async def get_reaction_gif(self, reaction_type:str) -> typing.Optional[str]:
         """
         Pings the endpoint, gets a reaction gif, bish bash bosh.
         """
@@ -74,7 +73,7 @@ class Simulation(utils.Cog):
         enabled = rows[0]['gifs_enabled']
         if enabled is False:
             return None
-        return await self.get_reaction_gif(self.bot, interaction_type)
+        return await self.get_reaction_gif(interaction_type)
 
     @utils.command(aliases=['snuggle', 'cuddle'])
     @commands.bot_has_permissions(send_messages=True)
