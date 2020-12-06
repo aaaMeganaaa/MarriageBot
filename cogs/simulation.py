@@ -235,9 +235,24 @@ class Simulation(utils.Cog):
 
     @utils.command(aliases=['intercourse', 'fuck', 'smash', 'heck'], hidden=True)
     @commands.is_nsfw()
-    @commands.bot_has_permissions(send_messages=True)
+    @commands.bot_has_permissions(send_messages=True, add_reactions=True, external_emojis=True)
     async def copulate(self, ctx:utils.Context, user:discord.Member):
         """Lets you... um... heck someone"""
+
+        guild_id = localutils.utils.get_guild_id(ctx)
+
+        # See if they're related
+        if await localutils.family.utils.is_related(self.bot, ctx.author, user):
+
+            # See if that relation is marriage
+            data = await self.bot.neo4j.cypher(
+                r"""MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->
+                (n:FamilyTreeMember {user_id: $partner_id, guild_id: $guild_id}) RETURN n""",
+                user_id=ctx.author.id, partner_id=user.id, guild_id=guild_id,
+            )
+            matches = data['results'][0]['data']
+            if not matches:
+                return await ctx.send("You're already related error.")
 
         # See if they want to marry
         result = await localutils.utils.send_proposal_message(
