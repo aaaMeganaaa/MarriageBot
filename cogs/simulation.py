@@ -52,15 +52,16 @@ class Simulation(utils.Cog):
         async with self.bot.session.get(f"{self.BASE_URL}/images/random", params=params, headers=headers) as r:
             try:
                 data = await r.json()
+                self.logger.debug(f"Response from Weeb.sh - {data}")
             except Exception as e:
                 data = await r.text()
-                self.logger.warning(f"Error from Weeb.sh ({e}): {data}")
+                self.logger.warning(f"Error from Weeb.sh ({e}) - {data}")
                 return None
             if str(r.status)[0] == "2":
                 return data['url']
 
         # Oh no it wasn't a good boy oh jeez oh heck
-        self.logger.warning(f"Error from Weeb.sh: {data}")
+        self.logger.warning(f"Error from Weeb.sh - {data}")
         return None
 
     async def get_reaction_gif(self, guild_id:int, interaction_type:str) -> typing.Optional[str]:
