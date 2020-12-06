@@ -41,17 +41,20 @@ class FamilyCommands(utils.Cog):
         # Make sure they can't propose to other people
         async with localutils.family.utils.FamilyMemberLock(self.bot, ctx.author, user, guild_id=guild_id):
 
-            # See if they're already married
+            # See if they're already married to a maximum amount of people, or to each other
             data = await self.bot.neo4j.cypher(
                 r"MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->(n:FamilyTreeMember) RETURN n",
                 user_id=ctx.author.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
+            for m in matches:
+                if m['row']['user_id'] == user.id:
+                    return await ctx.send("You two are already married .-.")
             permissions = await localutils.get_perks_for_user(self.bot, ctx.author)
             if len(matches) >= permissions.max_partners:
                 return await ctx.send(f"Unfortunately, can only marry **{permissions.max_partners}** people.")
 
-            # See if their partner is already married
+            # See if their partner is already married to a maximum amount of people
             data = await self.bot.neo4j.cypher(
                 r"MATCH (:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id})-[:MARRIED_TO]->(n:FamilyTreeMember) RETURN n",
                 user_id=user.id, guild_id=guild_id,

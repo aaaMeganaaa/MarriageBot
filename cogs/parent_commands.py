@@ -47,6 +47,8 @@ class ParentCommands(utils.Cog):
                 user_id=user.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
+            if matches[0]['row']['user_id'] == user.id:
+                return await ctx.send("They're already your child .-.")
             if matches:
                 return await ctx.send(
                     f"Sorry, {ctx.author.mention}, it looks like {user.mention} already has a parent :<",
@@ -113,6 +115,8 @@ class ParentCommands(utils.Cog):
                 user_id=ctx.author.id, guild_id=guild_id,
             )
             matches = data['results'][0]['data']
+            if matches[0]['row']['user_id'] == user.id:
+                return await ctx.send("They're already your parent .-.")
             if matches:
                 return await ctx.send("It looks like you already have a parent, unfortunately!")
 
