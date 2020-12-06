@@ -142,7 +142,7 @@ class Simulation(utils.Cog):
             return await ctx.send("*You gave yourself a cookie.*")
         await ctx.send(f"*Gives {user.mention} a cookie*")
 
-    @utils.command(aliases=['borger', 'borg'], hidden=True)
+    @utils.command(aliases=['borger', 'borg', 'burge'], hidden=True)
     @commands.bot_has_permissions(send_messages=True)
     async def burger(self, ctx:utils.Context, user:discord.Member):
         """Gives a burger to a mentioned user"""
