@@ -21,7 +21,8 @@ def only_mention(user:discord.User) -> discord.AllowedMentions:
 
 class TickPayloadCheckResult(object):
 
-    BOOLEAN_EMOJIS = ["\N{HEAVY CHECK MARK}", "\N{HEAVY MULTIPLICATION X}"]
+    # BOOLEAN_EMOJIS = ["\N{HEAVY CHECK MARK}", "\N{HEAVY MULTIPLICATION X}"]
+    BOOLEAN_EMOJIS = ["<:tick_filled_yes:784976310366634034>", "<:tick_filled_no:784976328231223306>"]
 
     def __init__(self, emoji):
         self.emoji = emoji
@@ -41,7 +42,7 @@ class TickPayloadCheckResult(object):
 
     @property
     def is_tick(self):
-        return self.emoji == "\N{HEAVY CHECK MARK}"
+        return self.emoji == self.BOOLEAN_EMOJIS[0]
 
     def __bool__(self):
         return self.emoji in self.BOOLEAN_EMOJIS
