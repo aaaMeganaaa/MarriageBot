@@ -112,7 +112,7 @@ class Simulation(utils.Cog):
             image_url=await self.get_reaction_gif(ctx.guild.id, "slap"),
         )
 
-    @utils.command()
+    @utils.command(hidden=True)
     @commands.bot_has_permissions(send_messages=True)
     async def coffee(self, ctx:utils.Context, user:discord.Member):
         """Gives coffee to a mentioned user"""
@@ -169,7 +169,7 @@ class Simulation(utils.Cog):
             return await ctx.send("*You climb right into the trash can, where you belong*")
         await ctx.send(f"*Throws {user.mention} into the dumpster*")
 
-    @utils.command(hidden=True)
+    @utils.command()
     @commands.bot_has_permissions(send_messages=True)
     async def poke(self, ctx:utils.Context, user:discord.Member):
         """Pokes a given user"""

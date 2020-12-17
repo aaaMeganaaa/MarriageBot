@@ -92,13 +92,14 @@ class FamilyCommands(utils.Cog):
     @utils.command()
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True, add_reactions=True)
-    async def divorce(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
+    async def divorce(self, ctx:utils.Context, *, user:discord.User):
         """
         Divorces you form your partner.
         """
 
         # Grab the guild id
         guild_id = localutils.utils.get_guild_id(ctx)
+        user_id = user.id
 
         # See if they're already married
         data = await self.bot.neo4j.cypher(

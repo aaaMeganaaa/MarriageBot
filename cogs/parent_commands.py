@@ -190,13 +190,14 @@ class ParentCommands(utils.Cog):
     @utils.command()
     @utils.checks.bot_is_ready()
     @commands.bot_has_permissions(send_messages=True)
-    async def disown(self, ctx:utils.Context, *, user_id:utils.converters.UserID):
+    async def disown(self, ctx:utils.Context, *, user:discord.User):
         """
         Leave your parent.
         """
 
         # Make sure they said someone
         guild_id = localutils.utils.get_guild_id(ctx)
+        user_id = user.id
 
         # Check they're actually a parent
         data = await self.bot.neo4j.cypher(
