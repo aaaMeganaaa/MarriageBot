@@ -210,7 +210,7 @@ class FamilyMemberLock(object):
     async def lock(self):
         for user in self.family_members:
             if await is_family_pending_proposal(self.bot, user, self.guild_id):
-                raise commands.CommandError(f"The family of {user.mention} has a pending proposal already.")
+                raise commands.CheckFailure(f"The family of {user.mention} has a pending proposal already.")
         for user in self.family_members:
             await self.bot.neo4j.cypher(
                 r"""MERGE (u:FamilyTreeMember {user_id: $user_id, guild_id: $guild_id}) SET u.pending_proposal=true""",
