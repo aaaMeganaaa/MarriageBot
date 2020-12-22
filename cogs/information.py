@@ -84,7 +84,7 @@ class Information(utils.Cog):
 
         guild_id = localutils.utils.get_guild_id(ctx)
         text = await localutils.family.utils.get_relationship(self.bot, ctx.author, discord.Object(user_id), guild_id=guild_id)
-        return await ctx.send(text or "You aren't related.")
+        return await ctx.send(" ".join(text) if text else "You aren't related.")
 
     @utils.command(aliases=['fs', 'treesize', 'ts'])
     @utils.checks.bot_is_ready()
