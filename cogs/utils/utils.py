@@ -15,6 +15,11 @@ def get_guild_id(ctx):
     return 0
 
 
+def get_username_from_user(user_string:str) -> str:
+    *x, y = user_string.split("#")
+    return "#".join(x)
+
+
 def only_mention(user:discord.User) -> discord.AllowedMentions:
     return discord.AllowedMentions(users=[user])
 
